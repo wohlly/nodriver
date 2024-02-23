@@ -258,8 +258,8 @@ class Browser:
                         self.targets,
                     )
                 )
-            await connection.sleep(0.25)
-            return connection
+            
+            
         else:
             # first tab from browser.tabs
             connection = next(filter(lambda item: item.type_ == "page", self.targets))
@@ -267,8 +267,16 @@ class Browser:
             frame_id, loader_id, *_ = await connection.send(cdp.page.navigate(url))
             # update the frame_id on the tab
             connection.frame_id = frame_id
-            await connection.sleep(0.25)
-            return connection
+        
+        if self.config.headless:
+            ua = self.info.get('User-Agent')
+            if not ua:
+                raise Exception('could not determine User-Agent')
+            new_ua = ua.replace('Headless','')
+            await connection.send(cdp.network.set_user_agent_override(new_ua))
+            logger.debug('overridden user agent from \n%s\nto\n%s' , ua, new_ua)
+
+        return connection
 
     async def start(self=None) -> Browser:
         """launches the actual browser"""
@@ -356,15 +364,7 @@ class Browser:
             )
 
         self.connection = Connection(self.info.webSocketDebuggerUrl, _owner=self)
-
-        if self.config.headless:
-            ua = self.info.get('User-Agent')
-            if not ua:
-                raise Exception('could not determine User-Agent')
-            new_ua = ua.replace('Headless','')
-            await self.connection.send(cdp.network.set_user_agent_override(new_ua))
-            logger.debug('overridden user agent from \n%s\nto\n%s' , ua, new_ua)
-
+        
         if self.config.autodiscover_targets:
             self.connection.add_handler(
                 cdp.target.TargetInfoChanged, self._handle_target_update
