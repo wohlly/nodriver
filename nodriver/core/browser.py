@@ -329,9 +329,15 @@ class Browser:
             logger.info("created process with pid %d " % self._process_pid)
 
         self._http = HTTPApi((self.config.host, self.config.port))
-
+        
         util.get_registered_instances().add(self)
-
+        if self.config.headless:
+            ua = self.info.get('User-Agent')
+            if not ua:
+                raise Exception('could not determine User-Agent')
+            new_ua = ua.replace('Headless','')
+            await self.connection.send(cdp.network.set_user_agent_override(new_ua))
+            logger.debug('overridden user agent from \n%s\nto\n%s' , ua, new_ua)
         await asyncio.sleep(0.25)
         for _ in range(5):
             try:
