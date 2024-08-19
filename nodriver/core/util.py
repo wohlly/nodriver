@@ -136,23 +136,23 @@ def deconstruct_browser():
     for _ in __registered__instances__:
         if not _.stopped:
             _.stop()
-        for attempt in range(5):
-            try:
-                if _.config and not _.config.uses_custom_data_dir:
+        if _.config and not _.config.uses_custom_data_dir:
+            for attempt in range(5):
+                try:
                     shutil.rmtree(_.config.user_data_dir, ignore_errors=False)
-            except FileNotFoundError as e:
-                break
-            except (PermissionError, OSError) as e:
-                if attempt == 4:
-                    logger.debug(
-                        "problem removing data dir %s\nConsider checking whether it's there and remove it by hand\nerror: %s",
-                        _.config.user_data_dir,
-                        e,
-                    )
+                except FileNotFoundError as e:
                     break
-                time.sleep(0.15)
-                continue
-        print("successfully removed temp profile %s" % _.config.user_data_dir)
+                except (PermissionError, OSError) as e:
+                    if attempt == 4:
+                        logger.debug(
+                            "problem removing data dir %s\nConsider checking whether it's there and remove it by hand\nerror: %s",
+                            _.config.user_data_dir,
+                            e,
+                        )
+                        break
+                    time.sleep(0.15)
+                    continue
+            print("successfully removed temp profile %s" % _.config.user_data_dir)
 
 
 def filter_recurse_all(
